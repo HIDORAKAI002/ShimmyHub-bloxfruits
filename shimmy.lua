@@ -454,8 +454,10 @@ local function doFastAttack()
     end)
     if not success then
         pcall(function()
-            local tool = lp.Character:FindFirstChildOfClass("Tool")
-            if tool then tool:Activate() end
+            local vim = game:GetService("VirtualInputManager")
+            vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+            task.wait()
+            vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
         end)
     end
 end
@@ -578,8 +580,8 @@ MainTab:CreateToggle({
                                     
                                     disableGravity()
                                     activateAbilities(LocalPlayer)
-                                    -- Teleport above/behind the mob to avoid attacks
-                                    local targetCFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
+                                    -- Teleport beneath the mob to hit safely
+                                    local targetCFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, -10, 0)
                                     LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
                                     
                                     -- Expand Hitbox to ensure hits land from above
@@ -695,8 +697,8 @@ MainTab:CreateToggle({
                                     disableGravity()
                                     activateAbilities(LocalPlayer)
                                     
-                                    -- Teleport above/behind mob and Attack
-                                    LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
+                                    -- Teleport beneath mob and Attack
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, -10, 0)
                                     
                                     -- Expand Hitbox to ensure hits land from above
                                     mob.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
@@ -794,21 +796,53 @@ VisualsTab:CreateToggle({
    Callback = function(Value)
         ESPEnabled = Value
         if ESPEnabled then
-            -- Simple ESP Logic Structure
-            for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-                if player ~= game:GetService("Players").LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local highlight = Instance.new("Highlight")
-                    highlight.Parent = player.Character
-                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
-                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    highlight.Name = "ShimmyESP"
+            task.spawn(function()
+                while ESPEnabled do
+                    task.wait(0.1)
+                    local lp = game:GetService("Players").LocalPlayer
+                    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+                        if player ~= lp and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            local bgui = player.Character.HumanoidRootPart:FindFirstChild("ShimmyESP_B")
+                            if not bgui then
+                                bgui = Instance.new("BillboardGui")
+                                bgui.Name = "ShimmyESP_B"
+                                bgui.AlwaysOnTop = true
+                                bgui.Size = UDim2.new(0, 200, 0, 50)
+                                bgui.StudsOffset = Vector3.new(0, 3, 0)
+                                
+                                local text = Instance.new("TextLabel", bgui)
+                                text.Size = UDim2.new(1, 0, 1, 0)
+                                text.BackgroundTransparency = 1
+                                text.TextColor3 = Color3.fromRGB(0, 255, 150)
+                                text.TextStrokeTransparency = 0
+                                text.Font = Enum.Font.GothamBold
+                                text.TextSize = 12
+                                bgui.Parent = player.Character.HumanoidRootPart
+                            end
+                            
+                            local dist = math.floor((player.Character.HumanoidRootPart.Position - lp.Character.HumanoidRootPart.Position).Magnitude)
+                            local level = player:FindFirstChild("Data") and player.Data:FindFirstChild("Level") and player.Data.Level.Value or "?"
+                            bgui.TextLabel.Text = string.format("[%s] Lv.%s\n%d studs", player.Name, level, dist)
+                            
+                            local hl = player.Character:FindFirstChild("ShimmyESP_H")
+                            if not hl then
+                                hl = Instance.new("Highlight")
+                                hl.Name = "ShimmyESP_H"
+                                hl.FillColor = Color3.fromRGB(255, 0, 0)
+                                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                                hl.Parent = player.Character
+                            end
+                        end
+                    end
                 end
-            end
+            end)
         else
-            -- Remove ESP
             for _, player in pairs(game:GetService("Players"):GetPlayers()) do
-                if player.Character and player.Character:FindFirstChild("ShimmyESP") then
-                    player.Character.ShimmyESP:Destroy()
+                if player.Character then
+                    if player.Character:FindFirstChild("ShimmyESP_H") then player.Character.ShimmyESP_H:Destroy() end
+                    if player.Character:FindFirstChild("HumanoidRootPart") and player.Character.HumanoidRootPart:FindFirstChild("ShimmyESP_B") then 
+                        player.Character.HumanoidRootPart.ShimmyESP_B:Destroy() 
+                    end
                 end
             end
         end
@@ -824,10 +858,13 @@ local TargetJumpPower = 50
 local JumpPowerEnabled = false
 
 -- Use RunService to enforce Speed/JumpPower against Anti-Cheat resets
-game:GetService("RunService").Stepped:Connect(function()
+game:GetService("RunService").Heartbeat:Connect(function(deltaTime)
     local lp = game:GetService("Players").LocalPlayer
-    if WalkSpeedEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") then
-        lp.Character.Humanoid.WalkSpeed = TargetWalkSpeed
+    if WalkSpeedEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") and lp.Character.Humanoid.MoveDirection.Magnitude > 0 then
+        local addedSpeed = TargetWalkSpeed - lp.Character.Humanoid.WalkSpeed
+        if addedSpeed > 0 then
+            lp.Character:TranslateBy(lp.Character.Humanoid.MoveDirection * (addedSpeed * deltaTime))
+        end
     end
     if JumpPowerEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") then
         lp.Character.Humanoid.JumpPower = TargetJumpPower
@@ -1074,7 +1111,7 @@ PvPTab:CreateToggle({
                         local myPos = lp.Character.HumanoidRootPart.Position
                         local distance = (targetPos - myPos).Magnitude
                         
-                        local offset = CFrame.new(0, 60, 0)
+                        local offset = CFrame.new(0, 0, 0)
                         
                         -- Dodge Logic (if opponent uses a skill/move, move 30 studs away)
                         if PvP_AutoDodge then
