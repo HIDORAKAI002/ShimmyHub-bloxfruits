@@ -30,28 +30,37 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.BorderSizePixel = 0
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
--- Draggable Logic for MainFrame
+local DragArea = Instance.new("Frame")
+DragArea.Name = "DragArea"
+DragArea.Parent = MainFrame
+DragArea.BackgroundTransparency = 1
+DragArea.Size = UDim2.new(1, 0, 0, 40)
+DragArea.ZIndex = 10
+
 local UserInputService = game:GetService("UserInputService")
-local dragging, dragInput, dragStart, startPos
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
+local function makeDraggable(frame)
+    local dragging, dragInput, dragStart, startPos
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+makeDraggable(DragArea)
 
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
@@ -60,6 +69,7 @@ Sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Sidebar.Size = UDim2.new(0, 140, 1, 0)
 Sidebar.BorderSizePixel = 0
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
+makeDraggable(Sidebar)
 
 local SidebarPatch = Instance.new("Frame", Sidebar)
 SidebarPatch.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
@@ -244,13 +254,19 @@ function ShimmyUI:CreateTab(name)
         Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
         
         local isDragging = false
-        Bar.MouseButton1Down:Connect(function() isDragging = true end)
+        Bar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                isDragging = true
+            end
+        end)
         UserInputService.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = false end
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                isDragging = false
+            end
         end)
         UserInputService.InputChanged:Connect(function(input)
-            if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local mousePos = UserInputService:GetMouseLocation().X
+            if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local mousePos = input.Position.X
                 local barAbs = Bar.AbsolutePosition.X
                 local barSize = Bar.AbsoluteSize.X
                 local perc = math.clamp((mousePos - barAbs) / barSize, 0, 1)
@@ -440,7 +456,9 @@ local function doFastAttack()
     end)
     if not success then
         pcall(function()
-            if mouse1click then mouse1click() end
+            local vu = game:GetService("VirtualUser")
+            vu:CaptureController()
+            vu:ClickButton1(Vector2.new())
         end)
     end
 end
@@ -484,12 +502,28 @@ local TargetMobName = ""
 local AutoFarmEnabled = false
 local BringMobsEnabled = false
 
-MainTab:CreateInput({
-   Name = "Target Mob Name",
-   PlaceholderText = "Enter exact mob name (e.g. Bandit [Lv. 5])",
-   RemoveTextAfterFocusLost = false,
-   Callback = function(Text)
-        TargetMobName = Text
+local MobDropdown = MainTab:CreateDropdown({
+   Name = "Select Target Mob",
+   Options = {""},
+   CurrentOption = {""},
+   Callback = function(Option)
+        TargetMobName = Option[1]
+   end,
+})
+
+MainTab:CreateButton({
+   Name = "Refresh Mobs",
+   Callback = function()
+        local mobs = {}
+        local enemiesFolder = game:GetService("Workspace"):FindFirstChild("Enemies")
+        if enemiesFolder then
+            for _, mob in pairs(enemiesFolder:GetChildren()) do
+                if mob:FindFirstChild("Humanoid") and not table.find(mobs, mob.Name) then
+                    table.insert(mobs, mob.Name)
+                end
+            end
+        end
+        MobDropdown:Refresh(mobs)
    end,
 })
 
@@ -547,8 +581,8 @@ MainTab:CreateToggle({
                                     
                                     disableGravity()
                                     activateAbilities(LocalPlayer)
-                                    -- Teleport slightly above and behind the mob to avoid attacks
-                                    local targetCFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
+                                    -- Teleport directly into the mob
+                                    local targetCFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0)
                                     LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
                                     
                                     -- Bring Mobs (Group them up)
@@ -662,13 +696,13 @@ MainTab:CreateToggle({
                                     disableGravity()
                                     activateAbilities(LocalPlayer)
                                     
-                                    -- Teleport and Attack
-                                    LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
+                                    -- Teleport directly into mob and Attack
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0)
                                     
                                     local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool") or LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
                                     if tool then
                                         LocalPlayer.Character.Humanoid:EquipTool(tool)
-                                        tool:Activate()
+                                        doFastAttack()
                                     end
                                     break
                                 end
@@ -1033,7 +1067,7 @@ PvPTab:CreateToggle({
                         local myPos = lp.Character.HumanoidRootPart.Position
                         local distance = (targetPos - myPos).Magnitude
                         
-                        local offset = CFrame.new(0, 0, 3)
+                        local offset = CFrame.new(0, 0, 0)
                         
                         -- Dodge Logic (if opponent uses a skill/move, move 30 studs away)
                         if PvP_AutoDodge then
