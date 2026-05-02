@@ -56,7 +56,7 @@ This file acts as a permanent record of all iterations, bug fixes, and future in
 ## Hotfix 2: Anti-Cheat & Combat Refinement (May 2, 2026)
 
 ### What we worked on:
-- **Combat Tweening Reverted to Origin:** The server-side anti-cheat in Blox Fruits strictly validates the actual physical distance between players/mobs regardless of inflated hitboxes. We reverted AutoFarm to \CFrame.new(0, -10, 0)\ (safely under the map) and PvP to \CFrame.new(0, 0, 0)\ to ensure 100% melee hit registration.
-- **Universal AutoClicker:** The \	ool:Activate()\ fallback was replaced with a direct \VirtualInputManager\ sequence, perfectly simulating screen taps for both Mobile and PC combat compatibility.
-- **WalkSpeed Anti-Cheat Bypass:** Blox Fruits actively overrides the \WalkSpeed\ property. We bypassed this entirely by hooking into \RunService.Heartbeat\ and dynamically translating the player's CFrame (\TranslateBy\) forward, allowing true speed modification without detection.
-- **Enhanced Player ESP:** Upgraded the Player ESP from a basic red outline to a full \BillboardGui\ system that tracks the player's Name, Level, and live Distance in studs.
+- **Combat Tweening Reverted to Origin:** The server-side anti-cheat in Blox Fruits strictly validates the actual physical distance between players/mobs regardless of inflated hitboxes. We reverted AutoFarm to `CFrame.new(0, -10, 0)` (safely under the map) and PvP to `CFrame.new(0, 0, 0)` to ensure 100% melee hit registration.
+- **Universal AutoClicker:** The `tool:Activate()` fallback was replaced with a direct `VirtualInputManager` sequence, perfectly simulating screen taps for both Mobile and PC combat compatibility.
+- **WalkSpeed Anti-Cheat Bypass:** Blox Fruits actively overrides the `WalkSpeed` property. We bypassed this entirely by hooking into `RunService.Heartbeat` and dynamically translating the player's CFrame (`TranslateBy`) forward, allowing true speed modification without detection.
+- **Enhanced Player ESP:** Upgraded the Player ESP from a basic red outline to a full `BillboardGui` system that tracks the player's Name, Level, and live Distance in studs.
