@@ -31,12 +31,38 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- ==========================================
+-- GLOBAL HELPER FUNCTIONS
+-- ==========================================
+local lastInstinctCheck = 0
+local function activateAbilities(player)
+    if not player or not player.Character then return end
+    
+    pcall(function()
+        -- Auto Haki (Aura)
+        if not player.Character:FindFirstChild("HasBuso") then
+            game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Buso")
+        end
+        
+        -- Auto Instinct (Dodge)
+        if tick() - lastInstinctCheck > 2 then
+            lastInstinctCheck = tick()
+            if player.PlayerGui and player.PlayerGui:FindFirstChild("ScreenGui") and not player.PlayerGui.ScreenGui:FindFirstChild("Dodges") then
+                game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                task.wait(0.05)
+                game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game)
+            end
+        end
+    end)
+end
+
+-- ==========================================
 -- TABS
 -- ==========================================
 local MainTab = Window:CreateTab("Main / Farming", 4483362458) -- Icon ID
 local VisualsTab = Window:CreateTab("Visuals / ESP", 4483362458)
 local PlayerTab = Window:CreateTab("Player", 4483362458)
 local ConfigTab = Window:CreateTab("Settings / Config", 4483362458)
+local PvPTab = Window:CreateTab("PvP / Combat", 4483362458)
 local HubsTab = Window:CreateTab("External Hubs", 4483362458)
 
 -- ==========================================
@@ -108,6 +134,7 @@ MainTab:CreateToggle({
                                 if mob.Name == TargetMobName and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
                                     
                                     disableGravity()
+                                    activateAbilities(LocalPlayer)
                                     -- Teleport slightly above and behind the mob to avoid attacks
                                     local targetCFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
                                     LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
@@ -267,6 +294,211 @@ ConfigTab:CreateInput({
         print("Webhook updated to: " .. Text)
    end,
 })
+
+-- ==========================================
+-- PVP / COMBAT TAB
+-- ==========================================
+local TargetPlayerName = ""
+local SelectedWeapon = ""
+local AutoPvPEnabled = false
+local PvP_TweenSpeed = 300
+local PvP_AutoDodge = false
+
+local PvP_AutoClick = false
+local PvP_SkillZ = false
+local PvP_SkillX = false
+local PvP_SkillC = false
+local PvP_SkillV = false
+local PvP_SkillF = false
+
+PvPTab:CreateSection("Target Settings")
+
+local PlayerDropdown = PvPTab:CreateDropdown({
+   Name = "Select Target Player",
+   Options = {""},
+   CurrentOption = {""},
+   MultipleOptions = false,
+   Flag = "PvPTargetPlayer",
+   Callback = function(Option)
+        TargetPlayerName = Option[1]
+   end,
+})
+
+PvPTab:CreateButton({
+   Name = "Refresh Players",
+   Callback = function()
+        local playerNames = {}
+        for _, v in pairs(game:GetService("Players"):GetPlayers()) do
+            if v ~= game:GetService("Players").LocalPlayer then
+                table.insert(playerNames, v.Name)
+            end
+        end
+        PlayerDropdown:Refresh(playerNames)
+   end,
+})
+
+local WeaponDropdown = PvPTab:CreateDropdown({
+    Name = "Select Weapon",
+    Options = {""},
+    CurrentOption = {""},
+    MultipleOptions = false,
+    Flag = "PvPWeapon",
+    Callback = function(Option)
+         SelectedWeapon = Option[1]
+    end,
+})
+
+PvPTab:CreateButton({
+   Name = "Refresh Weapons",
+   Callback = function()
+        local weapons = {}
+        local lp = game:GetService("Players").LocalPlayer
+        for _, tool in pairs(lp.Backpack:GetChildren()) do
+            if tool:IsA("Tool") then table.insert(weapons, tool.Name) end
+        end
+        if lp.Character then
+            for _, tool in pairs(lp.Character:GetChildren()) do
+                if tool:IsA("Tool") then table.insert(weapons, tool.Name) end
+            end
+        end
+        WeaponDropdown:Refresh(weapons)
+   end,
+})
+
+PvPTab:CreateSection("Combat Automation")
+
+PvPTab:CreateSlider({
+   Name = "Tween Speed",
+   Range = {50, 400},
+   Increment = 10,
+   Suffix = "Speed",
+   CurrentValue = 300,
+   Flag = "PvPTweenSpeed",
+   Callback = function(Value)
+        PvP_TweenSpeed = Value
+   end,
+})
+
+PvPTab:CreateToggle({
+   Name = "Auto Dodge (Move 30 Studs Away)",
+   CurrentValue = false,
+   Flag = "PvPDodge",
+   Callback = function(Value)
+        PvP_AutoDodge = Value
+   end,
+})
+
+PvPTab:CreateToggle({
+   Name = "Auto PvP (Tween to Player)",
+   CurrentValue = false,
+   Flag = "AutoPvPToggle",
+   Callback = function(Value)
+        AutoPvPEnabled = Value
+        if AutoPvPEnabled then
+            task.spawn(function()
+                local RunService = game:GetService("RunService")
+                local VirtualUser = game:GetService("VirtualUser")
+                local VirtualInputManager = game:GetService("VirtualInputManager")
+                local lp = game:GetService("Players").LocalPlayer
+
+                local function getTargetPlayer()
+                    if TargetPlayerName ~= "" then
+                        local target = game:GetService("Players"):FindFirstChild(TargetPlayerName)
+                        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 then
+                            return target
+                        end
+                    end
+                    return nil
+                end
+                
+                local function disableGravity()
+                    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                        local bv = lp.Character.HumanoidRootPart:FindFirstChild("ShimmyPvPVelocity")
+                        if not bv then
+                            bv = Instance.new("BodyVelocity")
+                            bv.Name = "ShimmyPvPVelocity"
+                            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                            bv.Velocity = Vector3.new(0, 0, 0)
+                            bv.Parent = lp.Character.HumanoidRootPart
+                        end
+                    end
+                end
+
+                local function enableGravity()
+                    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                        local bv = lp.Character.HumanoidRootPart:FindFirstChild("ShimmyPvPVelocity")
+                        if bv then bv:Destroy() end
+                    end
+                end
+
+                while AutoPvPEnabled do
+                    task.wait()
+                    local target = getTargetPlayer()
+                    if target and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                        disableGravity()
+                        activateAbilities(lp)
+                        
+                        local targetPos = target.Character.HumanoidRootPart.Position
+                        local myPos = lp.Character.HumanoidRootPart.Position
+                        local distance = (targetPos - myPos).Magnitude
+                        
+                        local offset = CFrame.new(0, 0, 3)
+                        
+                        -- Dodge Logic (if opponent uses a skill/move, move 30 studs away)
+                        if PvP_AutoDodge then
+                            local isEnemyAttacking = false
+                            for _, track in pairs(target.Character.Humanoid:GetPlayingAnimationTracks()) do
+                                -- Combat/Skill animations typically use Action priorities
+                                if track.Priority == Enum.AnimationPriority.Action or track.Priority == Enum.AnimationPriority.Action2 or track.Priority == Enum.AnimationPriority.Action3 or track.Priority == Enum.AnimationPriority.Action4 then
+                                    isEnemyAttacking = true
+                                    break
+                                end
+                            end
+                            
+                            if isEnemyAttacking then
+                                offset = CFrame.new(0, 30, 0) -- Move 30 studs up to dodge the skill
+                            end
+                        end
+                        
+                        local tweenInfo = TweenInfo.new(distance / PvP_TweenSpeed, Enum.EasingStyle.Linear)
+                        local tween = game:GetService("TweenService"):Create(lp.Character.HumanoidRootPart, tweenInfo, {CFrame = target.Character.HumanoidRootPart.CFrame * offset})
+                        tween:Play()
+                        
+                        if SelectedWeapon ~= "" then
+                            local tool = lp.Backpack:FindFirstChild(SelectedWeapon) or lp.Character:FindFirstChild(SelectedWeapon)
+                            if tool and tool.Parent == lp.Backpack then
+                                lp.Character.Humanoid:EquipTool(tool)
+                            end
+                        end
+                        
+                        if distance < 25 then
+                            if PvP_AutoClick then
+                                VirtualUser:ClickButton1(Vector2.new())
+                            end
+                            
+                            if PvP_SkillZ then VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Z, false, game) task.wait(0.01) VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Z, false, game) end
+                            if PvP_SkillX then VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.X, false, game) task.wait(0.01) VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.X, false, game) end
+                            if PvP_SkillC then VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.C, false, game) task.wait(0.01) VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.C, false, game) end
+                            if PvP_SkillV then VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.V, false, game) task.wait(0.01) VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.V, false, game) end
+                            if PvP_SkillF then VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game) task.wait(0.01) VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game) end
+                        end
+                    else
+                        enableGravity()
+                    end
+                end
+                enableGravity()
+            end)
+        end
+   end,
+})
+
+PvPTab:CreateSection("Auto Skills & Clicking")
+PvPTab:CreateToggle({Name = "Auto Click", CurrentValue = false, Flag = "PvPClick", Callback = function(v) PvP_AutoClick = v end})
+PvPTab:CreateToggle({Name = "Use Skill Z", CurrentValue = false, Flag = "PvP_Z", Callback = function(v) PvP_SkillZ = v end})
+PvPTab:CreateToggle({Name = "Use Skill X", CurrentValue = false, Flag = "PvP_X", Callback = function(v) PvP_SkillX = v end})
+PvPTab:CreateToggle({Name = "Use Skill C", CurrentValue = false, Flag = "PvP_C", Callback = function(v) PvP_SkillC = v end})
+PvPTab:CreateToggle({Name = "Use Skill V", CurrentValue = false, Flag = "PvP_V", Callback = function(v) PvP_SkillV = v end})
+PvPTab:CreateToggle({Name = "Use Skill F", CurrentValue = false, Flag = "PvP_F", Callback = function(v) PvP_SkillF = v end})
 
 -- ==========================================
 -- EXTERNAL HUBS TAB
