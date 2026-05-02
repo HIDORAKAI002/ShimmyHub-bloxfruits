@@ -43,3 +43,10 @@ This file acts as a permanent record of all iterations, bug fixes, and future in
 - **Expanded Hitboxes:** Since we are floating above mobs again, we drastically increased the target's HumanoidRootPart.Size to Vector3.new(60, 60, 60) and disabled collision. This guarantees our melee strikes will hit them from anywhere in the vicinity while we stay safely out of their attack range.
 - **Dynamic Auto-Refresh Dropdowns:** Removed the manual 'Refresh' buttons. Dropdowns now utilize an OnInteract hook that automatically scans workspace and repopulates the list the exact moment the user taps the dropdown menu.
 - **Mobile Optimization:** Increased Dropdown List expansion height and made scrollbars drastically thicker (8px) so they can be easily grabbed on touch screens.
+
+---
+
+## Hotfix: Dropdown Refresh Reversion (May 2, 2026)
+
+### What we worked on:
+- **Manual Refresh Restored:** The `OnInteract` dynamic auto-refresh feature introduced a conflict with the internal `ShimmyUI` component architecture, causing the dropdowns to fail to populate or break their sizing logic. We completely reverted this change and restored the dedicated `Refresh Mobs`, `Refresh Players`, and `Refresh Weapons` manual buttons to ensure 100% stability.
