@@ -119,6 +119,21 @@ createMinimizeButton()
 -- ==========================================
 -- GLOBAL HELPER FUNCTIONS
 -- ==========================================
+local FastAttackSpeed = 0.05
+local function doFastAttack()
+    local lp = game:GetService("Players").LocalPlayer
+    local success = pcall(function()
+        local CombatFramework = require(lp.PlayerScripts.CombatFramework)
+        local activeController = debug.getupvalues(CombatFramework)[2].activeController
+        activeController:attack()
+    end)
+    if not success then
+        pcall(function()
+            if mouse1click then mouse1click() end
+        end)
+    end
+end
+
 local lastInstinctCheck = 0
 local function activateAbilities(player)
     if not player or not player.Character then return end
@@ -392,23 +407,29 @@ MainTab:CreateToggle({
    end,
 })
 
+MainTab:CreateSlider({
+   Name = "Fast Attack Speed (Sec)",
+   Range = {0, 1},
+   Increment = 0.01,
+   Suffix = "s",
+   CurrentValue = 0.05,
+   Flag = "FastAttackSpeedSlider",
+   Callback = function(Value)
+        FastAttackSpeed = Value
+   end,
+})
+
 local AutoClickEnabled = false
 MainTab:CreateToggle({
-   Name = "Auto Click / Attack",
+   Name = "Auto Click / Fast Attack",
    CurrentValue = false,
    Flag = "AutoClickToggle",
    Callback = function(Value)
         AutoClickEnabled = Value
         task.spawn(function()
             while AutoClickEnabled do
-                task.wait(0.05)
-                local lp = game:GetService("Players").LocalPlayer
-                if lp.Character then
-                    local tool = lp.Character:FindFirstChildOfClass("Tool")
-                    if tool then
-                        tool:Activate()
-                    end
-                end
+                task.wait(FastAttackSpeed)
+                doFastAttack()
             end
         end)
    end,
@@ -558,6 +579,16 @@ local PvP_SkillF = false
 
 PvPTab:CreateSection("Target Settings")
 
+local PvP_FilterTeam = false
+PvPTab:CreateToggle({
+   Name = "Show PvPable Players Only",
+   CurrentValue = false,
+   Flag = "PvPFilterTeam",
+   Callback = function(Value)
+        PvP_FilterTeam = Value
+   end,
+})
+
 local PlayerDropdown = PvPTab:CreateDropdown({
    Name = "Select Target Player",
    Options = {""},
@@ -573,9 +604,12 @@ PvPTab:CreateButton({
    Name = "Refresh Players",
    Callback = function()
         local playerNames = {}
+        local lp = game:GetService("Players").LocalPlayer
         for _, v in pairs(game:GetService("Players"):GetPlayers()) do
-            if v ~= game:GetService("Players").LocalPlayer then
-                table.insert(playerNames, v.Name)
+            if v ~= lp then
+                if not PvP_FilterTeam or (v.Team ~= lp.Team) then
+                    table.insert(playerNames, v.Name)
+                end
             end
         end
         PlayerDropdown:Refresh(playerNames)
@@ -676,6 +710,7 @@ PvPTab:CreateToggle({
                     end
                 end
 
+                local lastFastAttack = 0
                 while AutoPvPEnabled do
                     task.wait()
                     local target = getTargetPlayer()
@@ -718,7 +753,10 @@ PvPTab:CreateToggle({
                         
                         if distance < 25 then
                             if PvP_AutoClick then
-                                VirtualUser:ClickButton1(Vector2.new())
+                                if tick() - lastFastAttack >= FastAttackSpeed then
+                                    lastFastAttack = tick()
+                                    doFastAttack()
+                                end
                             end
                             
                             if PvP_SkillZ then VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Z, false, game) task.wait(0.01) VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Z, false, game) end
