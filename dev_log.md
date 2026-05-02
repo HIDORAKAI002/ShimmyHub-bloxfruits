@@ -32,3 +32,14 @@ This file acts as a permanent record of all iterations, bug fixes, and future in
 - Auto-Bounty hunting logic with server hopping.
 - Complete Fruit Sniper & Auto-Store logic.
 - Advanced combat dodging (reading enemy animation tracks and tweening dynamically).
+
+---
+
+## Iteration 2: Quality of Life & Combat Optimization
+
+### What we worked on:
+- **Native UI Dragging:** Reverted the limited DragArea. The entire MainFrame is now draggable natively. We achieved this without breaking sliders or buttons by setting Active = true on all interactive UI element frames, allowing them to block the drag event from bubbling up to the MainFrame.
+- **Combat Tweening Reverted:** Mobs and AutoQuest targets now tween to CFrame.new(0, 8, 5) (above and behind) to avoid enemy attacks, while PvP targets still use point-blank CFrame.new(0, 0, 0) for direct hits.
+- **Expanded Hitboxes:** Since we are floating above mobs again, we drastically increased the target's HumanoidRootPart.Size to Vector3.new(60, 60, 60) and disabled collision. This guarantees our melee strikes will hit them from anywhere in the vicinity while we stay safely out of their attack range.
+- **Dynamic Auto-Refresh Dropdowns:** Removed the manual 'Refresh' buttons. Dropdowns now utilize an OnInteract hook that automatically scans workspace and repopulates the list the exact moment the user taps the dropdown menu.
+- **Mobile Optimization:** Increased Dropdown List expansion height and made scrollbars drastically thicker (8px) so they can be easily grabbed on touch screens.

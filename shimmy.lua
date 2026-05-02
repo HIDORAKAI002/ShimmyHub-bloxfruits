@@ -30,13 +30,6 @@ MainFrame.Size = UDim2.new(0, 550, 0, 350)
 MainFrame.BorderSizePixel = 0
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
-local DragArea = Instance.new("Frame")
-DragArea.Name = "DragArea"
-DragArea.Parent = MainFrame
-DragArea.BackgroundTransparency = 1
-DragArea.Size = UDim2.new(1, 0, 0, 40)
-DragArea.ZIndex = 10
-
 local UserInputService = game:GetService("UserInputService")
 local function makeDraggable(frame)
     local dragging, dragInput, dragStart, startPos
@@ -57,10 +50,8 @@ local function makeDraggable(frame)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
             MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
 end
-makeDraggable(DragArea)
+makeDraggable(MainFrame)
 
 local Sidebar = Instance.new("Frame")
 Sidebar.Name = "Sidebar"
@@ -197,6 +188,7 @@ function ShimmyUI:CreateTab(name)
         local ToggleFrame = Instance.new("Frame", Page)
         ToggleFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         ToggleFrame.Size = UDim2.new(1, -10, 0, 35)
+        ToggleFrame.Active = true
         Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
         
         local Label = Instance.new("TextLabel", ToggleFrame)
@@ -229,6 +221,7 @@ function ShimmyUI:CreateTab(name)
         local SliderFrame = Instance.new("Frame", Page)
         SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         SliderFrame.Size = UDim2.new(1, -10, 0, 50)
+        SliderFrame.Active = true
         Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 6)
         
         local Label = Instance.new("TextLabel", SliderFrame)
@@ -286,6 +279,7 @@ function ShimmyUI:CreateTab(name)
         local DropFrame = Instance.new("Frame", Page)
         DropFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         DropFrame.Size = UDim2.new(1, -10, 0, 35)
+        DropFrame.Active = true
         Instance.new("UICorner", DropFrame).CornerRadius = UDim.new(0, 6)
         DropFrame.ClipsDescendants = true
         
@@ -301,14 +295,14 @@ function ShimmyUI:CreateTab(name)
         DropList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         DropList.Position = UDim2.new(0, 0, 0, 35)
         DropList.Size = UDim2.new(1, 0, 1, -35)
-        DropList.ScrollBarThickness = 2
+        DropList.ScrollBarThickness = 8
         Instance.new("UIListLayout", DropList).SortOrder = Enum.SortOrder.LayoutOrder
         
         local function Refresh(newOptions)
             for _, c in pairs(DropList:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
             for _, opt in pairs(newOptions) do
                 local optBtn = Instance.new("TextButton", DropList)
-                optBtn.Size = UDim2.new(1, 0, 0, 25)
+                optBtn.Size = UDim2.new(1, -8, 0, 30)
                 optBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
                 optBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
                 optBtn.Text = opt
@@ -323,8 +317,9 @@ function ShimmyUI:CreateTab(name)
         Refresh(options)
         
         Button.MouseButton1Click:Connect(function()
+            if args.OnInteract then pcall(args.OnInteract) end
             if DropFrame.Size.Y.Offset == 35 then
-                DropFrame.Size = UDim2.new(1, -10, 0, 135)
+                DropFrame.Size = UDim2.new(1, -10, 0, 185)
             else
                 DropFrame.Size = UDim2.new(1, -10, 0, 35)
             end
@@ -337,6 +332,7 @@ function ShimmyUI:CreateTab(name)
         local InputFrame = Instance.new("Frame", Page)
         InputFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         InputFrame.Size = UDim2.new(1, -10, 0, 35)
+        InputFrame.Active = true
         Instance.new("UICorner", InputFrame).CornerRadius = UDim.new(0, 6)
         
         local TextBox = Instance.new("TextBox", InputFrame)
@@ -360,6 +356,7 @@ function ShimmyUI:CreateTab(name)
         local BtnFrame = Instance.new("Frame", Page)
         BtnFrame.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
         BtnFrame.Size = UDim2.new(1, -10, 0, 35)
+        BtnFrame.Active = true
         Instance.new("UICorner", BtnFrame).CornerRadius = UDim.new(0, 6)
         
         local Button = Instance.new("TextButton", BtnFrame)
@@ -511,21 +508,19 @@ local MobDropdown = MainTab:CreateDropdown({
    end,
 })
 
-MainTab:CreateButton({
-   Name = "Refresh Mobs",
-   Callback = function()
-        local mobs = {}
-        local enemiesFolder = game:GetService("Workspace"):FindFirstChild("Enemies")
-        if enemiesFolder then
-            for _, mob in pairs(enemiesFolder:GetChildren()) do
-                if mob:FindFirstChild("Humanoid") and not table.find(mobs, mob.Name) then
-                    table.insert(mobs, mob.Name)
-                end
+-- We set OnInteract so it dynamically grabs the mobs whenever you tap it!
+MobDropdown.OnInteract = function()
+    local mobs = {}
+    local enemiesFolder = game:GetService("Workspace"):FindFirstChild("Enemies")
+    if enemiesFolder then
+        for _, mob in pairs(enemiesFolder:GetChildren()) do
+            if mob:FindFirstChild("Humanoid") and not table.find(mobs, mob.Name) then
+                table.insert(mobs, mob.Name)
             end
         end
-        MobDropdown:Refresh(mobs)
-   end,
-})
+    end
+    MobDropdown:Refresh(mobs)
+end
 
 MainTab:CreateToggle({
    Name = "Bring Mobs (Magnet)",
@@ -581,9 +576,13 @@ MainTab:CreateToggle({
                                     
                                     disableGravity()
                                     activateAbilities(LocalPlayer)
-                                    -- Teleport directly into the mob
-                                    local targetCFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0)
+                                    -- Teleport above/behind the mob to avoid attacks
+                                    local targetCFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
                                     LocalPlayer.Character.HumanoidRootPart.CFrame = targetCFrame
+                                    
+                                    -- Expand Hitbox to ensure hits land from above
+                                    mob.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                    mob.HumanoidRootPart.CanCollide = false
                                     
                                     -- Bring Mobs (Group them up)
                                     if BringMobsEnabled then
@@ -696,8 +695,12 @@ MainTab:CreateToggle({
                                     disableGravity()
                                     activateAbilities(LocalPlayer)
                                     
-                                    -- Teleport directly into mob and Attack
-                                    LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0)
+                                    -- Teleport above/behind mob and Attack
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
+                                    
+                                    -- Expand Hitbox to ensure hits land from above
+                                    mob.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                                    mob.HumanoidRootPart.CanCollide = false
                                     
                                     local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool") or LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
                                     if tool then
@@ -945,21 +948,18 @@ local PlayerDropdown = PvPTab:CreateDropdown({
    end,
 })
 
-PvPTab:CreateButton({
-   Name = "Refresh Players",
-   Callback = function()
-        local playerNames = {}
-        local lp = game:GetService("Players").LocalPlayer
-        for _, v in pairs(game:GetService("Players"):GetPlayers()) do
-            if v ~= lp then
-                if not PvP_FilterTeam or (v.Team ~= lp.Team) then
-                    table.insert(playerNames, v.Name)
-                end
+PlayerDropdown.OnInteract = function()
+    local playerNames = {}
+    local lp = game:GetService("Players").LocalPlayer
+    for _, v in pairs(game:GetService("Players"):GetPlayers()) do
+        if v ~= lp then
+            if not PvP_FilterTeam or (v.Team ~= lp.Team) then
+                table.insert(playerNames, v.Name)
             end
         end
-        PlayerDropdown:Refresh(playerNames)
-   end,
-})
+    end
+    PlayerDropdown:Refresh(playerNames)
+end
 
 local WeaponDropdown = PvPTab:CreateDropdown({
     Name = "Select Weapon",
@@ -972,22 +972,19 @@ local WeaponDropdown = PvPTab:CreateDropdown({
     end,
 })
 
-PvPTab:CreateButton({
-   Name = "Refresh Weapons",
-   Callback = function()
-        local weapons = {}
-        local lp = game:GetService("Players").LocalPlayer
-        for _, tool in pairs(lp.Backpack:GetChildren()) do
+WeaponDropdown.OnInteract = function()
+    local weapons = {}
+    local lp = game:GetService("Players").LocalPlayer
+    for _, tool in pairs(lp.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then table.insert(weapons, tool.Name) end
+    end
+    if lp.Character then
+        for _, tool in pairs(lp.Character:GetChildren()) do
             if tool:IsA("Tool") then table.insert(weapons, tool.Name) end
         end
-        if lp.Character then
-            for _, tool in pairs(lp.Character:GetChildren()) do
-                if tool:IsA("Tool") then table.insert(weapons, tool.Name) end
-            end
-        end
-        WeaponDropdown:Refresh(weapons)
-   end,
-})
+    end
+    WeaponDropdown:Refresh(weapons)
+end
 
 PvPTab:CreateSection("Combat Automation")
 
@@ -1062,6 +1059,10 @@ PvPTab:CreateToggle({
                     if target and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
                         disableGravity()
                         activateAbilities(lp)
+                        
+                        -- Expand target hitbox for guaranteed hits
+                        target.Character.HumanoidRootPart.Size = Vector3.new(60, 60, 60)
+                        target.Character.HumanoidRootPart.CanCollide = false
                         
                         local targetPos = target.Character.HumanoidRootPart.Position
                         local myPos = lp.Character.HumanoidRootPart.Position
