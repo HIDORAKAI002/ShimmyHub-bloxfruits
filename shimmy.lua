@@ -454,9 +454,8 @@ local function doFastAttack()
     end)
     if not success then
         pcall(function()
-            local vu = game:GetService("VirtualUser")
-            vu:CaptureController()
-            vu:ClickButton1(Vector2.new())
+            local tool = lp.Character:FindFirstChildOfClass("Tool")
+            if tool then tool:Activate() end
         end)
     end
 end
@@ -610,9 +609,7 @@ MainTab:CreateToggle({
                                             LocalPlayer.Character.Humanoid:EquipTool(tool)
                                         end
                                     end
-                                    
-                                    VirtualUser:CaptureController()
-                                    VirtualUser:ClickButton1(Vector2.new())
+                                    doFastAttack()
                                     
                                     break -- Focus on one mob per loop cycle
                                 end
@@ -1077,7 +1074,7 @@ PvPTab:CreateToggle({
                         local myPos = lp.Character.HumanoidRootPart.Position
                         local distance = (targetPos - myPos).Magnitude
                         
-                        local offset = CFrame.new(0, 0, 0)
+                        local offset = CFrame.new(0, 60, 0)
                         
                         -- Dodge Logic (if opponent uses a skill/move, move 30 studs away)
                         if PvP_AutoDodge then
@@ -1106,7 +1103,7 @@ PvPTab:CreateToggle({
                             end
                         end
                         
-                        if distance < 25 then
+                        if distance < 75 then
                             if PvP_AutoClick then
                                 if tick() - lastFastAttack >= FastAttackSpeed then
                                     lastFastAttack = tick()
