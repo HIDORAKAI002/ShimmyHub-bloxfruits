@@ -319,7 +319,6 @@ function ShimmyUI:CreateTab(name)
         Refresh(options)
         
         Button.MouseButton1Click:Connect(function()
-            if args.OnInteract then pcall(args.OnInteract) end
             if DropFrame.Size.Y.Offset == 35 then
                 DropFrame.Size = UDim2.new(1, -10, 0, 185)
             else
@@ -510,19 +509,21 @@ local MobDropdown = MainTab:CreateDropdown({
    end,
 })
 
--- We set OnInteract so it dynamically grabs the mobs whenever you tap it!
-MobDropdown.OnInteract = function()
-    local mobs = {}
-    local enemiesFolder = game:GetService("Workspace"):FindFirstChild("Enemies")
-    if enemiesFolder then
-        for _, mob in pairs(enemiesFolder:GetChildren()) do
-            if mob:FindFirstChild("Humanoid") and not table.find(mobs, mob.Name) then
-                table.insert(mobs, mob.Name)
+MainTab:CreateButton({
+   Name = "Refresh Mobs",
+   Callback = function()
+        local mobs = {}
+        local enemiesFolder = game:GetService("Workspace"):FindFirstChild("Enemies")
+        if enemiesFolder then
+            for _, mob in pairs(enemiesFolder:GetChildren()) do
+                if mob:FindFirstChild("Humanoid") and not table.find(mobs, mob.Name) then
+                    table.insert(mobs, mob.Name)
+                end
             end
         end
-    end
-    MobDropdown:Refresh(mobs)
-end
+        MobDropdown:Refresh(mobs)
+   end,
+})
 
 MainTab:CreateToggle({
    Name = "Bring Mobs (Magnet)",
@@ -950,18 +951,21 @@ local PlayerDropdown = PvPTab:CreateDropdown({
    end,
 })
 
-PlayerDropdown.OnInteract = function()
-    local playerNames = {}
-    local lp = game:GetService("Players").LocalPlayer
-    for _, v in pairs(game:GetService("Players"):GetPlayers()) do
-        if v ~= lp then
-            if not PvP_FilterTeam or (v.Team ~= lp.Team) then
-                table.insert(playerNames, v.Name)
+PvPTab:CreateButton({
+   Name = "Refresh Players",
+   Callback = function()
+        local playerNames = {}
+        local lp = game:GetService("Players").LocalPlayer
+        for _, v in pairs(game:GetService("Players"):GetPlayers()) do
+            if v ~= lp then
+                if not PvP_FilterTeam or (v.Team ~= lp.Team) then
+                    table.insert(playerNames, v.Name)
+                end
             end
         end
-    end
-    PlayerDropdown:Refresh(playerNames)
-end
+        PlayerDropdown:Refresh(playerNames)
+   end,
+})
 
 local WeaponDropdown = PvPTab:CreateDropdown({
     Name = "Select Weapon",
@@ -974,19 +978,22 @@ local WeaponDropdown = PvPTab:CreateDropdown({
     end,
 })
 
-WeaponDropdown.OnInteract = function()
-    local weapons = {}
-    local lp = game:GetService("Players").LocalPlayer
-    for _, tool in pairs(lp.Backpack:GetChildren()) do
-        if tool:IsA("Tool") then table.insert(weapons, tool.Name) end
-    end
-    if lp.Character then
-        for _, tool in pairs(lp.Character:GetChildren()) do
+PvPTab:CreateButton({
+   Name = "Refresh Weapons",
+   Callback = function()
+        local weapons = {}
+        local lp = game:GetService("Players").LocalPlayer
+        for _, tool in pairs(lp.Backpack:GetChildren()) do
             if tool:IsA("Tool") then table.insert(weapons, tool.Name) end
         end
-    end
-    WeaponDropdown:Refresh(weapons)
-end
+        if lp.Character then
+            for _, tool in pairs(lp.Character:GetChildren()) do
+                if tool:IsA("Tool") then table.insert(weapons, tool.Name) end
+            end
+        end
+        WeaponDropdown:Refresh(weapons)
+   end,
+})
 
 PvPTab:CreateSection("Combat Automation")
 
