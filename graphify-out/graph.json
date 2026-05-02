@@ -1,0 +1,241 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "shimmy.lua",
+      "file_type": "code",
+      "source_file": "shimmy.lua",
+      "source_location": "L1",
+      "id": "shimmy_lua",
+      "community": 0,
+      "norm_label": "shimmy.lua"
+    },
+    {
+      "label": "activateAbilities()",
+      "file_type": "code",
+      "source_file": "shimmy.lua",
+      "source_location": "L37",
+      "id": "roblox_script_shimmy_activateabilities",
+      "community": 0,
+      "norm_label": "activateabilities()"
+    },
+    {
+      "label": "disableGravity()",
+      "file_type": "code",
+      "source_file": "shimmy.lua",
+      "source_location": "L108",
+      "id": "roblox_script_shimmy_disablegravity",
+      "community": 0,
+      "norm_label": "disablegravity()"
+    },
+    {
+      "label": "enableGravity()",
+      "file_type": "code",
+      "source_file": "shimmy.lua",
+      "source_location": "L121",
+      "id": "roblox_script_shimmy_enablegravity",
+      "community": 0,
+      "norm_label": "enablegravity()"
+    },
+    {
+      "label": "getTargetPlayer()",
+      "file_type": "code",
+      "source_file": "shimmy.lua",
+      "source_location": "L404",
+      "id": "roblox_script_shimmy_gettargetplayer",
+      "community": 0,
+      "norm_label": "gettargetplayer()"
+    },
+    {
+      "label": "AlchemyHub.lua",
+      "file_type": "code",
+      "source_file": "scripts\\AlchemyHub.lua",
+      "source_location": "L1",
+      "id": "scripts_alchemyhub_lua",
+      "community": 2,
+      "norm_label": "alchemyhub.lua"
+    },
+    {
+      "label": "Kncrypt.lua",
+      "file_type": "code",
+      "source_file": "scripts\\Kncrypt.lua",
+      "source_location": "L1",
+      "id": "scripts_kncrypt_lua",
+      "community": 3,
+      "norm_label": "kncrypt.lua"
+    },
+    {
+      "label": "luarmor.lua",
+      "file_type": "code",
+      "source_file": "scripts\\luarmor.lua",
+      "source_location": "L1",
+      "id": "scripts_luarmor_lua",
+      "community": 4,
+      "norm_label": "luarmor.lua"
+    },
+    {
+      "label": "RealRedz.lua",
+      "file_type": "code",
+      "source_file": "scripts\\RealRedz.lua",
+      "source_location": "L1",
+      "id": "scripts_realredz_lua",
+      "community": 5,
+      "norm_label": "realredz.lua"
+    },
+    {
+      "label": "redzHub.lua",
+      "file_type": "code",
+      "source_file": "scripts\\redzHub.lua",
+      "source_location": "L1",
+      "id": "scripts_redzhub_lua",
+      "community": 1,
+      "norm_label": "redzhub.lua"
+    },
+    {
+      "label": "s()",
+      "file_type": "code",
+      "source_file": "scripts\\redzHub.lua",
+      "source_location": "L1",
+      "id": "scripts_redzhub_s",
+      "community": 1,
+      "norm_label": "s()"
+    },
+    {
+      "label": "l()",
+      "file_type": "code",
+      "source_file": "scripts\\redzHub.lua",
+      "source_location": "L1",
+      "id": "scripts_redzhub_l",
+      "community": 1,
+      "norm_label": "l()"
+    },
+    {
+      "label": "bh()",
+      "file_type": "code",
+      "source_file": "scripts\\redzHub.lua",
+      "source_location": "L1",
+      "id": "scripts_redzhub_bh",
+      "community": 1,
+      "norm_label": "bh()"
+    },
+    {
+      "label": "SpeedHubX.lua",
+      "file_type": "code",
+      "source_file": "scripts\\SpeedHubX.lua",
+      "source_location": "L1",
+      "id": "scripts_speedhubx_lua",
+      "community": 6,
+      "norm_label": "speedhubx.lua"
+    },
+    {
+      "label": "VermzHub.lua",
+      "file_type": "code",
+      "source_file": "scripts\\VermzHub.lua",
+      "source_location": "L1",
+      "id": "scripts_vermzhub_lua",
+      "community": 7,
+      "norm_label": "vermzhub.lua"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "shimmy.lua",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_src": "shimmy_lua",
+      "_tgt": "roblox_script_shimmy_activateabilities",
+      "source": "shimmy_lua",
+      "target": "roblox_script_shimmy_activateabilities",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "shimmy.lua",
+      "source_location": "L414",
+      "weight": 1.0,
+      "_src": "shimmy_lua",
+      "_tgt": "roblox_script_shimmy_disablegravity",
+      "source": "shimmy_lua",
+      "target": "roblox_script_shimmy_disablegravity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "shimmy.lua",
+      "source_location": "L427",
+      "weight": 1.0,
+      "_src": "shimmy_lua",
+      "_tgt": "roblox_script_shimmy_enablegravity",
+      "source": "shimmy_lua",
+      "target": "roblox_script_shimmy_enablegravity",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "shimmy.lua",
+      "source_location": "L404",
+      "weight": 1.0,
+      "_src": "shimmy_lua",
+      "_tgt": "roblox_script_shimmy_gettargetplayer",
+      "source": "shimmy_lua",
+      "target": "roblox_script_shimmy_gettargetplayer",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts\\redzHub.lua",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "scripts_redzhub_lua",
+      "_tgt": "scripts_redzhub_s",
+      "source": "scripts_redzhub_lua",
+      "target": "scripts_redzhub_s",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts\\redzHub.lua",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "scripts_redzhub_lua",
+      "_tgt": "scripts_redzhub_l",
+      "source": "scripts_redzhub_lua",
+      "target": "scripts_redzhub_l",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts\\redzHub.lua",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "scripts_redzhub_lua",
+      "_tgt": "scripts_redzhub_bh",
+      "source": "scripts_redzhub_lua",
+      "target": "scripts_redzhub_bh",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "scripts\\redzHub.lua",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "scripts_redzhub_bh",
+      "_tgt": "scripts_redzhub_l",
+      "source": "scripts_redzhub_l",
+      "target": "scripts_redzhub_bh",
+      "confidence_score": 1.0
+    }
+  ],
+  "hyperedges": []
+}

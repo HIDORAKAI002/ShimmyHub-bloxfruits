@@ -11,7 +11,15 @@ getgenv().OnlyMirage = false -- this will only find mirage
 getgenv().FindBoth = true -- finds both moon and mirage
 
 -- Load Rayfield UI Library
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+print("[Shimmy Hub] Loading Rayfield UI... Please wait. (Sirius servers can be slow)")
+local RayfieldSuccess, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end)
+
+if not RayfieldSuccess or not Rayfield then
+    warn("[Shimmy Hub] Failed to load Rayfield UI. Sirius might be down.")
+    return
+end
 
 local Window = Rayfield:CreateWindow({
    Name = "Shimmy Hub 💥",
@@ -28,7 +36,85 @@ local Window = Rayfield:CreateWindow({
       RememberJoins = true 
    },
    KeySystem = false,
+   Keybind = Enum.KeyCode.RightShift,
 })
+
+-- ==========================================
+-- CUSTOM DRAGGABLE MINIMIZE BUTTON
+-- ==========================================
+local function createMinimizeButton()
+    local ScreenGui = Instance.new("ScreenGui")
+    local ToggleButton = Instance.new("TextButton")
+    local UICorner = Instance.new("UICorner")
+
+    ScreenGui.Name = "ShimmyToggle"
+    -- Try to put in CoreGui so it doesn't delete on death, fallback to PlayerGui
+    local success = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
+    if not success then
+        ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+    end
+    
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    ToggleButton.Parent = ScreenGui
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    ToggleButton.Position = UDim2.new(0.05, 0, 0.1, 0)
+    ToggleButton.Size = UDim2.new(0, 45, 0, 45)
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.Text = "💥"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 20.000
+    ToggleButton.BorderSizePixel = 0
+    ToggleButton.AutoButtonColor = true
+
+    UICorner.CornerRadius = UDim.new(0, 12)
+    UICorner.Parent = ToggleButton
+
+    -- Draggable Logic
+    local UserInputService = game:GetService("UserInputService")
+    local dragging, dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        ToggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    ToggleButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = ToggleButton.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    ToggleButton.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+
+    -- Toggle Rayfield Logic
+    ToggleButton.MouseButton1Click:Connect(function()
+        local vim = game:GetService("VirtualInputManager")
+        vim:SendKeyEvent(true, Enum.KeyCode.RightShift, false, game)
+        task.wait(0.01)
+        vim:SendKeyEvent(false, Enum.KeyCode.RightShift, false, game)
+    end)
+end
+
+createMinimizeButton()
 
 -- ==========================================
 -- GLOBAL HELPER FUNCTIONS
@@ -180,6 +266,132 @@ MainTab:CreateToggle({
    end,
 })
 
+local AutoQuestFarmEnabled = false
+MainTab:CreateToggle({
+   Name = "Autonomous Quest Farm (Compass)",
+   CurrentValue = false,
+   Flag = "AutoQuestFarm",
+   Callback = function(Value)
+        AutoQuestFarmEnabled = Value
+        if AutoQuestFarmEnabled then
+            task.spawn(function()
+                local Players = game:GetService("Players")
+                local LocalPlayer = Players.LocalPlayer
+                local Workspace = game:GetService("Workspace")
+
+                local function getQuestEnemyName()
+                    local questUI = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Quest")
+                    if questUI and questUI.Visible then
+                        local title = questUI:FindFirstChild("Container") and questUI.Container:FindFirstChild("QuestTitle") and questUI.Container.QuestTitle:FindFirstChild("Title")
+                        if title and title.Text then
+                            local text = title.Text
+                            local enemyName = string.match(text, "Defeat %d+ (.*)")
+                            if enemyName then
+                                if string.sub(enemyName, -1) == "s" then
+                                    enemyName = string.sub(enemyName, 1, -2)
+                                end
+                                return enemyName
+                            end
+                        end
+                    end
+                    return nil
+                end
+
+                local function getCompassTarget()
+                    local compass = LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Compass")
+                    if compass and compass.Visible then
+                        local textLabel = compass:FindFirstChild("TextLabel")
+                        if textLabel and textLabel.Text then
+                            return textLabel.Text
+                        end
+                    end
+                    return nil
+                end
+
+                local function disableGravity()
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        local bv = LocalPlayer.Character.HumanoidRootPart:FindFirstChild("ShimmyFarmVelocity")
+                        if not bv then
+                            bv = Instance.new("BodyVelocity")
+                            bv.Name = "ShimmyFarmVelocity"
+                            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                            bv.Velocity = Vector3.new(0, 0, 0)
+                            bv.Parent = LocalPlayer.Character.HumanoidRootPart
+                        end
+                    end
+                end
+
+                while AutoQuestFarmEnabled do
+                    task.wait(0.5)
+                    local currentQuestEnemy = getQuestEnemyName()
+                    
+                    if currentQuestEnemy then
+                        -- We have a quest, find the mob!
+                        local foundMob = false
+                        local enemiesFolder = Workspace:FindFirstChild("Enemies")
+                        if enemiesFolder then
+                            for _, mob in pairs(enemiesFolder:GetChildren()) do
+                                if string.find(mob.Name, currentQuestEnemy) and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 and mob:FindFirstChild("HumanoidRootPart") then
+                                    foundMob = true
+                                    disableGravity()
+                                    activateAbilities(LocalPlayer)
+                                    
+                                    -- Teleport and Attack
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 8, 5)
+                                    
+                                    local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool") or LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+                                    if tool then
+                                        LocalPlayer.Character.Humanoid:EquipTool(tool)
+                                        tool:Activate()
+                                    end
+                                    break
+                                end
+                            end
+                        end
+                    else
+                        -- No active quest. Need to find quest giver based on Compass.
+                        local compassText = getCompassTarget()
+                        if compassText then
+                            local npcsFolder = Workspace:FindFirstChild("NPCs")
+                            if npcsFolder then
+                                local targetNpc = nil
+                                for _, npc in pairs(npcsFolder:GetChildren()) do
+                                    -- Simple heuristic: Extract main word like "Bandit" from "Bandit Quest [Lv. 5]"
+                                    local mainWord = string.match(compassText, "(%w+) Quest") or string.match(compassText, "(%w+)")
+                                    if mainWord and string.find(npc.Name, mainWord) then
+                                        targetNpc = npc
+                                        break
+                                    end
+                                end
+                                
+                                if targetNpc and targetNpc:FindFirstChild("HumanoidRootPart") then
+                                    disableGravity()
+                                    -- Teleport to NPC to grab the quest
+                                    LocalPlayer.Character.HumanoidRootPart.CFrame = targetNpc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                                    
+                                    -- Fire CommF_ to take quest (Generic fallback: if we don't know the exact ID, just fire the prompt)
+                                    pcall(function()
+                                        -- Try to auto accept quest 1 or 2
+                                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", compassText, 1)
+                                        task.wait(0.5)
+                                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest", compassText, 2)
+                                    end)
+                                    task.wait(1)
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local bv = LocalPlayer.Character.HumanoidRootPart:FindFirstChild("ShimmyFarmVelocity")
+                    if bv then bv:Destroy() end
+                end
+            end)
+        end
+   end,
+})
+
 local AutoClickEnabled = false
 MainTab:CreateToggle({
    Name = "Auto Click / Attack",
@@ -190,8 +402,13 @@ MainTab:CreateToggle({
         task.spawn(function()
             while AutoClickEnabled do
                 task.wait(0.05)
-                -- Trigger virtual user click
-                game:GetService("VirtualUser"):ClickButton1(Vector2.new())
+                local lp = game:GetService("Players").LocalPlayer
+                if lp.Character then
+                    local tool = lp.Character:FindFirstChildOfClass("Tool")
+                    if tool then
+                        tool:Activate()
+                    end
+                end
             end
         end)
    end,
@@ -232,6 +449,31 @@ VisualsTab:CreateToggle({
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
+local TargetWalkSpeed = 16
+local WalkSpeedEnabled = false
+local TargetJumpPower = 50
+local JumpPowerEnabled = false
+
+-- Use RunService to enforce Speed/JumpPower against Anti-Cheat resets
+game:GetService("RunService").Stepped:Connect(function()
+    local lp = game:GetService("Players").LocalPlayer
+    if WalkSpeedEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") then
+        lp.Character.Humanoid.WalkSpeed = TargetWalkSpeed
+    end
+    if JumpPowerEnabled and lp.Character and lp.Character:FindFirstChild("Humanoid") then
+        lp.Character.Humanoid.JumpPower = TargetJumpPower
+    end
+end)
+
+PlayerTab:CreateToggle({
+   Name = "Enable Speed Modifier",
+   CurrentValue = false,
+   Flag = "WalkSpeedToggle",
+   Callback = function(Value)
+        WalkSpeedEnabled = Value
+   end,
+})
+
 PlayerTab:CreateSlider({
    Name = "WalkSpeed",
    Range = {16, 500},
@@ -240,10 +482,16 @@ PlayerTab:CreateSlider({
    CurrentValue = 16,
    Flag = "WalkSpeedSlider", 
    Callback = function(Value)
-        local lp = game:GetService("Players").LocalPlayer
-        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-            lp.Character.Humanoid.WalkSpeed = Value
-        end
+        TargetWalkSpeed = Value
+   end,
+})
+
+PlayerTab:CreateToggle({
+   Name = "Enable Jump Modifier",
+   CurrentValue = false,
+   Flag = "JumpPowerToggle",
+   Callback = function(Value)
+        JumpPowerEnabled = Value
    end,
 })
 
@@ -255,10 +503,7 @@ PlayerTab:CreateSlider({
    CurrentValue = 50,
    Flag = "JumpPowerSlider", 
    Callback = function(Value)
-        local lp = game:GetService("Players").LocalPlayer
-        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-            lp.Character.Humanoid.JumpPower = Value
-        end
+        TargetJumpPower = Value
    end,
 })
 
