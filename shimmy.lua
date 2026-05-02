@@ -10,51 +10,366 @@ getgenv().WebHookNotify = "here webhook"
 getgenv().OnlyMirage = false -- this will only find mirage
 getgenv().FindBoth = true -- finds both moon and mirage
 
--- Load Rayfield UI Library
-print("[Shimmy Hub] Loading Rayfield UI... Please wait. (Sirius servers can be slow)")
-local RayfieldSuccess, Rayfield = pcall(function()
-    return loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- ==========================================
+-- CUSTOM UI FRAMEWORK (SHIMMY UI)
+-- ==========================================
+local ShimmyUI = {}
+local CoreGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ShimmyHub"
+ScreenGui.Parent = CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
+MainFrame.Size = UDim2.new(0, 550, 0, 350)
+MainFrame.BorderSizePixel = 0
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+
+-- Draggable Logic for MainFrame
+local UserInputService = game:GetService("UserInputService")
+local dragging, dragInput, dragStart, startPos
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
 end)
 
-if not RayfieldSuccess or not Rayfield then
-    warn("[Shimmy Hub] Failed to load Rayfield UI. Sirius might be down.")
-    return
+local Sidebar = Instance.new("Frame")
+Sidebar.Name = "Sidebar"
+Sidebar.Parent = MainFrame
+Sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Sidebar.Size = UDim2.new(0, 140, 1, 0)
+Sidebar.BorderSizePixel = 0
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
+
+local SidebarPatch = Instance.new("Frame", Sidebar)
+SidebarPatch.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+SidebarPatch.BorderSizePixel = 0
+SidebarPatch.Position = UDim2.new(1, -10, 0, 0)
+SidebarPatch.Size = UDim2.new(0, 10, 1, 0)
+
+local Title = Instance.new("TextLabel")
+Title.Parent = Sidebar
+Title.BackgroundTransparency = 1
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "Shimmy Hub 💥"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16
+
+local TabContainer = Instance.new("ScrollingFrame")
+TabContainer.Parent = Sidebar
+TabContainer.BackgroundTransparency = 1
+TabContainer.Position = UDim2.new(0, 0, 0, 40)
+TabContainer.Size = UDim2.new(1, 0, 1, -40)
+TabContainer.ScrollBarThickness = 2
+local TabListLayout = Instance.new("UIListLayout", TabContainer)
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Padding = UDim.new(0, 5)
+
+local ContentArea = Instance.new("Frame")
+ContentArea.Parent = MainFrame
+ContentArea.BackgroundTransparency = 1
+ContentArea.Position = UDim2.new(0, 150, 0, 10)
+ContentArea.Size = UDim2.new(1, -160, 1, -20)
+
+local firstTab = true
+
+function ShimmyUI:CreateWindow(config)
+    return ShimmyUI
 end
 
-local Window = Rayfield:CreateWindow({
-   Name = "Shimmy Hub 💥",
-   LoadingTitle = "Loading Shimmy Hub...",
-   LoadingSubtitle = "by josep",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "ShimmyHub",
-      FileName = "ShimmyHubConfig"
-   },
-   Discord = {
-      Enabled = false,
-      Invite = "noinvitelink", 
-      RememberJoins = true 
-   },
-   KeySystem = false,
-   Keybind = Enum.KeyCode.RightShift,
-})
+function ShimmyUI:Notify(config)
+    -- notification stub
+end
+
+function ShimmyUI:CreateTab(name)
+    local TabButton = Instance.new("TextButton")
+    TabButton.Parent = TabContainer
+    TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    TabButton.Size = UDim2.new(1, -10, 0, 30)
+    TabButton.Position = UDim2.new(0, 5, 0, 0)
+    TabButton.Font = Enum.Font.GothamSemibold
+    TabButton.Text = name
+    TabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+    TabButton.TextSize = 13
+    Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
+
+    local Page = Instance.new("ScrollingFrame")
+    Page.Parent = ContentArea
+    Page.BackgroundTransparency = 1
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.ScrollBarThickness = 4
+    Page.Visible = firstTab
+    
+    local PageLayout = Instance.new("UIListLayout", Page)
+    PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    PageLayout.Padding = UDim.new(0, 8)
+    
+    if firstTab then
+        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TabButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        firstTab = false
+    end
+
+    TabButton.MouseButton1Click:Connect(function()
+        for _, child in pairs(ContentArea:GetChildren()) do
+            if child:IsA("ScrollingFrame") then child.Visible = false end
+        end
+        for _, child in pairs(TabContainer:GetChildren()) do
+            if child:IsA("TextButton") then 
+                child.TextColor3 = Color3.fromRGB(200, 200, 200)
+                child.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+            end
+        end
+        Page.Visible = true
+        TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TabButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    end)
+
+    local TabMethods = {}
+    
+    function TabMethods:CreateSection(text)
+        local Sec = Instance.new("TextLabel")
+        Sec.Parent = Page
+        Sec.BackgroundTransparency = 1
+        Sec.Size = UDim2.new(1, 0, 0, 25)
+        Sec.Font = Enum.Font.GothamBold
+        Sec.Text = text
+        Sec.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Sec.TextXAlignment = Enum.TextXAlignment.Left
+        Sec.TextSize = 14
+    end
+
+    function TabMethods:CreateParagraph(args)
+        local Title = Instance.new("TextLabel")
+        Title.Parent = Page
+        Title.BackgroundTransparency = 1
+        Title.Size = UDim2.new(1, 0, 0, 20)
+        Title.Font = Enum.Font.GothamBold
+        Title.Text = args.Title
+        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Title.TextXAlignment = Enum.TextXAlignment.Left
+        Title.TextSize = 13
+        
+        local Desc = Instance.new("TextLabel")
+        Desc.Parent = Page
+        Desc.BackgroundTransparency = 1
+        Desc.Size = UDim2.new(1, 0, 0, 20)
+        Desc.Font = Enum.Font.Gotham
+        Desc.Text = args.Content
+        Desc.TextColor3 = Color3.fromRGB(200, 200, 200)
+        Desc.TextXAlignment = Enum.TextXAlignment.Left
+        Desc.TextSize = 12
+    end
+
+    function TabMethods:CreateToggle(args)
+        local state = args.CurrentValue or false
+        local ToggleFrame = Instance.new("Frame", Page)
+        ToggleFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        ToggleFrame.Size = UDim2.new(1, -10, 0, 35)
+        Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
+        
+        local Label = Instance.new("TextLabel", ToggleFrame)
+        Label.BackgroundTransparency = 1
+        Label.Position = UDim2.new(0, 10, 0, 0)
+        Label.Size = UDim2.new(0.7, 0, 1, 0)
+        Label.Font = Enum.Font.Gotham
+        Label.Text = args.Name
+        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        Label.TextSize = 13
+        
+        local Switch = Instance.new("TextButton", ToggleFrame)
+        Switch.BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(80, 80, 80)
+        Switch.Position = UDim2.new(1, -50, 0.5, -10)
+        Switch.Size = UDim2.new(0, 40, 0, 20)
+        Switch.Text = ""
+        Instance.new("UICorner", Switch).CornerRadius = UDim.new(1, 0)
+        
+        local function Fire()
+            state = not state
+            Switch.BackgroundColor3 = state and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(80, 80, 80)
+            if args.Callback then pcall(args.Callback, state) end
+        end
+        Switch.MouseButton1Click:Connect(Fire)
+    end
+
+    function TabMethods:CreateSlider(args)
+        local value = args.CurrentValue or args.Range[1]
+        local SliderFrame = Instance.new("Frame", Page)
+        SliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        SliderFrame.Size = UDim2.new(1, -10, 0, 50)
+        Instance.new("UICorner", SliderFrame).CornerRadius = UDim.new(0, 6)
+        
+        local Label = Instance.new("TextLabel", SliderFrame)
+        Label.BackgroundTransparency = 1
+        Label.Position = UDim2.new(0, 10, 0, 5)
+        Label.Size = UDim2.new(0.7, 0, 0, 20)
+        Label.Font = Enum.Font.Gotham
+        Label.Text = args.Name .. " (" .. value .. ")"
+        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        Label.TextSize = 13
+        
+        local Bar = Instance.new("TextButton", SliderFrame)
+        Bar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        Bar.Position = UDim2.new(0, 10, 0, 30)
+        Bar.Size = UDim2.new(1, -20, 0, 10)
+        Bar.Text = ""
+        Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
+        
+        local Fill = Instance.new("Frame", Bar)
+        Fill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        Fill.Size = UDim2.new((value - args.Range[1]) / (args.Range[2] - args.Range[1]), 0, 1, 0)
+        Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
+        
+        local isDragging = false
+        Bar.MouseButton1Down:Connect(function() isDragging = true end)
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then isDragging = false end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                local mousePos = UserInputService:GetMouseLocation().X
+                local barAbs = Bar.AbsolutePosition.X
+                local barSize = Bar.AbsoluteSize.X
+                local perc = math.clamp((mousePos - barAbs) / barSize, 0, 1)
+                Fill.Size = UDim2.new(perc, 0, 1, 0)
+                local exactValue = (perc * (args.Range[2] - args.Range[1])) + args.Range[1]
+                value = args.Increment == 1 and math.floor(exactValue) or exactValue
+                if args.Increment ~= 1 then value = math.floor(value * 100) / 100 end
+                Label.Text = args.Name .. " (" .. value .. ")"
+                if args.Callback then pcall(args.Callback, value) end
+            end
+        end)
+    end
+
+    function TabMethods:CreateDropdown(args)
+        local options = args.Options or {}
+        local current = args.CurrentOption and args.CurrentOption[1] or ""
+        local DropFrame = Instance.new("Frame", Page)
+        DropFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        DropFrame.Size = UDim2.new(1, -10, 0, 35)
+        Instance.new("UICorner", DropFrame).CornerRadius = UDim.new(0, 6)
+        DropFrame.ClipsDescendants = true
+        
+        local Button = Instance.new("TextButton", DropFrame)
+        Button.BackgroundTransparency = 1
+        Button.Size = UDim2.new(1, 0, 0, 35)
+        Button.Font = Enum.Font.Gotham
+        Button.Text = args.Name .. ": " .. current
+        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Button.TextSize = 13
+        
+        local DropList = Instance.new("ScrollingFrame", DropFrame)
+        DropList.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        DropList.Position = UDim2.new(0, 0, 0, 35)
+        DropList.Size = UDim2.new(1, 0, 1, -35)
+        DropList.ScrollBarThickness = 2
+        Instance.new("UIListLayout", DropList).SortOrder = Enum.SortOrder.LayoutOrder
+        
+        local function Refresh(newOptions)
+            for _, c in pairs(DropList:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+            for _, opt in pairs(newOptions) do
+                local optBtn = Instance.new("TextButton", DropList)
+                optBtn.Size = UDim2.new(1, 0, 0, 25)
+                optBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                optBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                optBtn.Text = opt
+                optBtn.MouseButton1Click:Connect(function()
+                    current = opt
+                    Button.Text = args.Name .. ": " .. current
+                    DropFrame.Size = UDim2.new(1, -10, 0, 35)
+                    if args.Callback then pcall(args.Callback, {current}) end
+                end)
+            end
+        end
+        Refresh(options)
+        
+        Button.MouseButton1Click:Connect(function()
+            if DropFrame.Size.Y.Offset == 35 then
+                DropFrame.Size = UDim2.new(1, -10, 0, 135)
+            else
+                DropFrame.Size = UDim2.new(1, -10, 0, 35)
+            end
+        end)
+        
+        return { Refresh = function(self, newOpts) Refresh(newOpts) end }
+    end
+
+    function TabMethods:CreateInput(args)
+        local InputFrame = Instance.new("Frame", Page)
+        InputFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        InputFrame.Size = UDim2.new(1, -10, 0, 35)
+        Instance.new("UICorner", InputFrame).CornerRadius = UDim.new(0, 6)
+        
+        local TextBox = Instance.new("TextBox", InputFrame)
+        TextBox.BackgroundTransparency = 1
+        TextBox.Size = UDim2.new(1, -20, 1, 0)
+        TextBox.Position = UDim2.new(0, 10, 0, 0)
+        TextBox.Font = Enum.Font.Gotham
+        TextBox.Text = ""
+        TextBox.PlaceholderText = args.Name .. " (" .. (args.PlaceholderText or "") .. ")"
+        TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+        TextBox.TextXAlignment = Enum.TextXAlignment.Left
+        TextBox.TextSize = 13
+        TextBox.ClearTextOnFocus = false
+        
+        TextBox.FocusLost:Connect(function()
+            if args.Callback then pcall(args.Callback, TextBox.Text) end
+        end)
+    end
+
+    function TabMethods:CreateButton(args)
+        local BtnFrame = Instance.new("Frame", Page)
+        BtnFrame.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+        BtnFrame.Size = UDim2.new(1, -10, 0, 35)
+        Instance.new("UICorner", BtnFrame).CornerRadius = UDim.new(0, 6)
+        
+        local Button = Instance.new("TextButton", BtnFrame)
+        Button.BackgroundTransparency = 1
+        Button.Size = UDim2.new(1, 0, 1, 0)
+        Button.Font = Enum.Font.GothamBold
+        Button.Text = args.Name
+        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Button.TextSize = 13
+        
+        Button.MouseButton1Click:Connect(function()
+            if args.Callback then pcall(args.Callback) end
+        end)
+    end
+
+    return TabMethods
+end
+
+local Window = ShimmyUI:CreateWindow()
 
 -- ==========================================
 -- CUSTOM DRAGGABLE MINIMIZE BUTTON
 -- ==========================================
 local function createMinimizeButton()
-    local ScreenGui = Instance.new("ScreenGui")
     local ToggleButton = Instance.new("TextButton")
     local UICorner = Instance.new("UICorner")
-
-    ScreenGui.Name = "ShimmyToggle"
-    -- Try to put in CoreGui so it doesn't delete on death, fallback to PlayerGui
-    local success = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
-    if not success then
-        ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    end
-    
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     ToggleButton.Parent = ScreenGui
     ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -71,7 +386,6 @@ local function createMinimizeButton()
     UICorner.Parent = ToggleButton
 
     -- Draggable Logic
-    local UserInputService = game:GetService("UserInputService")
     local dragging, dragInput, dragStart, startPos
 
     local function update(input)
@@ -105,12 +419,9 @@ local function createMinimizeButton()
         end
     end)
 
-    -- Toggle Rayfield Logic
+    -- Toggle Logic: Directly toggle MainFrame visibility
     ToggleButton.MouseButton1Click:Connect(function()
-        local vim = game:GetService("VirtualInputManager")
-        vim:SendKeyEvent(true, Enum.KeyCode.RightShift, false, game)
-        task.wait(0.01)
-        vim:SendKeyEvent(false, Enum.KeyCode.RightShift, false, game)
+        MainFrame.Visible = not MainFrame.Visible
     end)
 end
 
